@@ -39,6 +39,14 @@ class ScanStateError(NetGuardError):
         super().__init__(message)
 
 
+class ExplanationServiceError(NetGuardError):
+    status_code = status.HTTP_503_SERVICE_UNAVAILABLE
+    code = "explanation_service_unavailable"
+
+    def __init__(self, message: str = "The local AI explanation service is unavailable"):
+        super().__init__(message)
+
+
 class TargetNotAuthorizedError(NetGuardError):
     status_code = status.HTTP_403_FORBIDDEN
     code = "target_not_authorized"

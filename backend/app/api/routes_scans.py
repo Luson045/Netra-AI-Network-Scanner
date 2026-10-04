@@ -17,7 +17,9 @@ from app.models import Asset, Finding, ScanJob
 from app.models.enums import ACTIVE_SCAN_STATUSES
 from app.models.scan import utcnow
 from app.schemas.scan import ScanCreate, ScanHistoryPoint, ScanOut, ScanProgressOut
-from app.services.scanner.targets import parse_port_spec, parse_targets
+from app.schemas.pipeline import ScanPipelineOut, ScanPlan, ScanPlanInput
+from app.models import ScanPipelineRun
+from app.services.pipeline import build_scan_plan
 
 logger = logging.getLogger("app.api.scans")
 
@@ -27,34 +29,49 @@ router = APIRouter(prefix="/scans", tags=["scans"])
 @router.post("/preview")
 async def preview_scan(payload: ScanCreate):
     """Validate and summarize an authorized scan without creating a job."""
-    networks, hosts = parse_targets(payload.targets)
-    ports = parse_port_spec(payload.ports)
+    plan = build_scan_plan(payload)
     return {
-        "targets": networks,
-        "host_count": len(hosts),
-        "ports": ports,
-        "check_count": len(hosts) * len(ports),
+        "targets": plan.targets,
+        "host_count": len(plan.host_ips),
+        "ports": plan.ports,
+        "check_count": plan.check_count,
     }
+
+
+@router.post("/plan", response_model=ScanPlan)
+async def plan_scan(payload: ScanPlanInput):
+    """Parse either a ScanCreate request or explicit plain-text scope."""
+    return build_scan_plan(payload.scan)
 
 
 @router.post("", response_model=ScanOut, status_code=201)
 async def create_scan(payload: ScanCreate, db: AsyncSession = Depends(get_db)):
     """Create (queue) a scan job. Targets are validated and authorized now."""
-    # Parse targets eagerly so the user gets immediate feedback on bad/forbidden targets.
-    networks, _hosts = parse_targets(payload.targets)
-    parse_port_spec(payload.ports)
+    plan = build_scan_plan(payload)
 
     scan = ScanJob(
         name=payload.name or f"Scan {utcnow().strftime('%Y-%m-%d %H:%M')}",
         target_spec=payload.targets.strip(),
         port_spec=payload.ports,
-        targets="\n".join(networks),
+        targets="\n".join(plan.targets),
         status="pending",
     )
     db.add(scan)
     await db.commit()
     await db.refresh(scan)
     return scan
+
+
+@router.get("/{scan_id}/pipeline", response_model=ScanPipelineOut)
+async def get_scan_pipeline(scan_id: int, db: AsyncSession = Depends(get_db)):
+    """Return the persisted change analysis, review order, and claim checks."""
+    scan = await db.get(ScanJob, scan_id)
+    if scan is None:
+        raise NotFoundError("Scan not found")
+    pipeline = await db.get(ScanPipelineRun, scan_id)
+    if pipeline is None:
+        raise ScanStateError("Pipeline results are available after the scan completes")
+    return pipeline
 
 
 @router.get("", response_model=list[ScanOut])
