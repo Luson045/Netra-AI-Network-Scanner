@@ -11,6 +11,8 @@ const state = {
   pollTimer: null,
   refreshInFlight: false,
   noticeTimer: null,
+  explanations: {},
+  explanationLoading: new Set(),
 };
 
 async function api(path, options = {}) {
@@ -132,9 +134,23 @@ function severityMarkup(severity) {
 function renderFindingRow(finding) {
   const asset = state.assets.find((item) => item.id === finding.asset_id);
   const evidence = finding.evidence || "No additional evidence recorded.";
+  const explanation = state.explanations[finding.id];
+  const aiSelected = explanation?.mode === "ai";
+  const explanationBody = aiSelected
+    ? explanation.error
+      ? `<p class="explanation-error">${escapeHtml(explanation.error)}</p>`
+      : `<p>${escapeHtml(explanation.text || "Generating a local AI explanation…")}</p>${explanation.model ? `<span class="explanation-model">Local model: ${escapeHtml(explanation.model)}</span>` : ""}`
+    : `<p><strong>Observed:</strong> ${escapeHtml(evidence)}</p><p><strong>Why it matters:</strong> ${escapeHtml(finding.description)}</p><p><strong>Suggested action:</strong> ${escapeHtml(finding.recommendation)}</p>`;
+  const isLoading = state.explanationLoading.has(finding.id);
   return `<tr>
     <td>${severityMarkup(finding.severity)}</td>
-    <td><div class="finding-title">${escapeHtml(finding.title)}</div><div class="finding-description">${escapeHtml(finding.description)}</div><div class="recommendation">${escapeHtml(finding.recommendation)}</div></td>
+    <td><div class="finding-title">${escapeHtml(finding.title)}</div>
+      <div class="explanation-controls">
+        <button class="explanation-button ${aiSelected ? "" : "selected"}" type="button" data-explanation-mode="rules" data-finding-id="${Number(finding.id)}" aria-pressed="${!aiSelected}">Rule-based</button>
+        <button class="explanation-button ${aiSelected ? "selected" : ""}" type="button" data-explanation-mode="ai" data-finding-id="${Number(finding.id)}" aria-pressed="${aiSelected}" ${isLoading ? "disabled" : ""}>${isLoading ? "Generating…" : "Explain with local AI"}</button>
+      </div>
+      <div class="finding-explanation ${aiSelected ? "ai-explanation" : ""}">${explanationBody}</div>
+    </td>
     <td class="address-cell">${escapeHtml(asset?.ip || (finding.asset_id ? `Asset #${finding.asset_id}` : "Network-wide"))}</td>
     <td><div class="finding-evidence">${escapeHtml(evidence)}</div></td>
     <td><span class="status-open">● Open</span></td>
@@ -151,6 +167,33 @@ function renderFindings() {
   $("#finding-table-body").innerHTML = findings.map(renderFindingRow).join("");
   $("#finding-empty").hidden = findings.length > 0;
   $("#finding-result-count").textContent = `${findings.length} finding${findings.length === 1 ? "" : "s"}`;
+}
+
+async function explainFinding(findingId, mode) {
+  const finding = state.findings.find((item) => item.id === findingId);
+  if (!finding) return;
+  if (mode === "rules") {
+    state.explanations[findingId] = { mode: "rules" };
+    renderFindings();
+    return;
+  }
+
+  state.explanations[findingId] = { mode: "ai", text: "" };
+  state.explanationLoading.add(findingId);
+  renderFindings();
+  try {
+    const result = await api(`/findings/${findingId}/explanation`, { method: "POST" });
+    state.explanations[findingId] = {
+      mode: "ai",
+      text: result.explanation,
+      model: result.model,
+    };
+  } catch (error) {
+    state.explanations[findingId] = { mode: "ai", error: error.message };
+  } finally {
+    state.explanationLoading.delete(findingId);
+    renderFindings();
+  }
 }
 
 function renderHistory() {
@@ -282,8 +325,16 @@ function bindAssetRows() {
 async function startScan(form) {
   const fields = new FormData(form);
   const name = String(fields.get("name") || "").trim();
-  const targets = String(fields.get("targets") || "").trim();
-  const ports = String(fields.get("ports") || "").trim();
+  const typedTargets = String(fields.get("targets") || "").trim();
+  const selectedTargets = $$('input[name="target-preset"]:checked').map((input) => input.value);
+  const targets = [...selectedTargets, typedTargets].filter(Boolean).join(",");
+  const typedPorts = String(fields.get("ports") || "").trim();
+  const selectedPorts = $$('input[name="port-preset"]:checked').map((input) => input.value);
+  const ports = [...selectedPorts, typedPorts].filter(Boolean).join(",");
+  if (!targets) {
+    setNotice("Select at least one target preset or enter a target.");
+    return;
+  }
   if (!$("#scan-authorized").checked) {
     setNotice("Confirm that you own these targets or are authorized to scan them.");
     return;
@@ -339,6 +390,11 @@ $("#jump-to-scan").addEventListener("click", () => {
   $("#new-scan-panel").scrollIntoView({ behavior: "smooth", block: "center" });
 });
 $("#refresh-button").addEventListener("click", () => refreshData());
+$("#finding-table-body").addEventListener("click", (event) => {
+  const button = event.target.closest("[data-explanation-mode]");
+  if (!button) return;
+  explainFinding(Number(button.dataset.findingId), button.dataset.explanationMode);
+});
 
 state.pollTimer = setInterval(refreshData, 5000);
 refreshData();

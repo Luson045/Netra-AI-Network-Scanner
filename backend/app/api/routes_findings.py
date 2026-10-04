@@ -7,9 +7,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db
-from app.models import Finding
-from app.models.enums import FindingSeverity, FindingStatus, SEVERITY_ORDER
+from app.core.errors import NotFoundError
+from app.models import Asset, Finding
+from app.models.enums import FindingStatus
 from app.schemas.finding import FindingOut
+from app.services.explanations import generate_local_ai_explanation
 
 router = APIRouter(tags=["findings"])
 
@@ -39,9 +41,31 @@ async def list_findings(
 async def get_finding(finding_id: int, db: AsyncSession = Depends(get_db)):
     finding = await db.get(Finding, finding_id)
     if finding is None:
-        from app.core.errors import NotFoundError
         raise NotFoundError("Finding not found")
     return finding
+
+
+@router.post("/findings/{finding_id}/explanation")
+async def explain_finding_with_local_ai(
+    finding_id: int, db: AsyncSession = Depends(get_db)
+):
+    """Generate an on-demand explanation using the configured local Ollama model."""
+    finding = await db.get(Finding, finding_id)
+    if finding is None:
+        raise NotFoundError("Finding not found")
+    asset = await db.get(Asset, finding.asset_id) if finding.asset_id is not None else None
+    explanation, model = await generate_local_ai_explanation(
+        {
+            "title": finding.title,
+            "severity": finding.severity,
+            "description": finding.description,
+            "evidence": finding.evidence,
+            "recommendation": finding.recommendation,
+            "asset_ip": asset.ip if asset else None,
+            "asset_risk_score": asset.risk_score if asset else None,
+        }
+    )
+    return {"mode": "ai", "provider": "ollama", "model": model, "explanation": explanation}
 
 
 @router.patch("/findings/{finding_id}", response_model=FindingOut)

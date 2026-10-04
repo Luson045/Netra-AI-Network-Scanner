@@ -17,13 +17,19 @@ from sqlalchemy import select
 
 from app.core.config import settings
 from app.core.logging import get_logger
-from app.models import Asset, Finding, ScanJob, Service
+from app.models import Asset, Finding, ScanJob, ScanObservation, ScanPipelineRun, Service
 from app.models.enums import FindingStatus, FindingSeverity
 from app.models.scan import utcnow
 from app.services.analysis.rules import run_analysis_rules
 from app.services.analysis.risk import compute_asset_risk
 from app.services.scanner.checks import check_host
-from app.services.scanner.targets import parse_port_spec, parse_targets
+from app.schemas.scan import ScanCreate
+from app.services.pipeline import (
+    build_scan_plan,
+    compare_observations,
+    prioritize_findings,
+    verify_claims,
+)
 from app.core.utils import progress_hub
 
 logger = get_logger("app.scanner.engine")
@@ -83,31 +89,78 @@ async def run_scan(scan_id: int, worker_id: str) -> None:
         await session.commit()
 
         try:
-            networks, hosts = parse_targets(scan.target_spec)
-            ports = parse_port_spec(scan.port_spec)
-            scan.targets = "\n".join(networks)
+            plan = build_scan_plan(
+                ScanCreate(targets=scan.target_spec, ports=scan.port_spec)
+            )
+            hosts = plan.host_ips
+            ports = plan.ports
+            scan.targets = "\n".join(plan.targets)
             scan.total_targets = len(hosts)
             await session.commit()
 
-            # --- discovery ---
+            # --- discovery and raw observations ---
             backend = _discovery_backend()
-            alive_map = await backend.discover(hosts, ports)
-            alive_ips = [ip for ip, alive in alive_map.items() if alive]
+            if hasattr(backend, "observe"):
+                port_results_by_host = await backend.observe(hosts, ports)
+            else:
+                await backend.discover(hosts, ports)
+                sem = asyncio.Semaphore(settings.scan_concurrency)
+
+                async def _probe(ip: str) -> list:
+                    async with sem:
+                        return await check_host(ip, ports)
+
+                results = await asyncio.gather(*(_probe(ip) for ip in hosts))
+                port_results_by_host = dict(zip(hosts, results))
+
+            alive_ips = [
+                ip for ip, results in port_results_by_host.items()
+                if any(result.state == "open" for result in results)
+            ]
             scan.hosts_up = len(alive_ips)
             scan.completed_targets = len(hosts)
             scan.heartbeat_at = utcnow()
             await session.commit()
             await progress_hub.publish(scan_id, _progress_payload(scan))
 
-            port_results_by_host: dict[str, list] = {}
-            if alive_ips:
-                sem = asyncio.Semaphore(settings.scan_concurrency)
+            current_observations = []
+            for ip in hosts:
+                results = port_results_by_host.get(ip, [])
+                checks = [
+                    {
+                        "port": result.port,
+                        "state": result.state,
+                        "service": result.service_name,
+                        "banner": result.banner,
+                        "latency_ms": result.latency_ms,
+                        "error": result.error,
+                    }
+                    for result in results
+                ]
+                observation = {
+                    "scan_id": scan_id,
+                    "ip": ip,
+                    "host_alive": ip in alive_ips,
+                    "ports_scanned": ports,
+                    "port_checks": checks,
+                }
+                current_observations.append(observation)
+                session.add(
+                    ScanObservation(
+                        scan_id=scan_id,
+                        ip=ip,
+                        host_alive=observation["host_alive"],
+                        ports_scanned=ports,
+                        port_checks=checks,
+                    )
+                )
 
-                async def _probe(ip: str):
-                    async with sem:
-                        port_results_by_host[ip] = await check_host(ip, ports)
-
-                await asyncio.gather(*(_probe(ip) for ip in alive_ips))
+            historical_observations = await _load_historical_observations(
+                session, scan_id, hosts
+            )
+            evidence_changes = compare_observations(
+                current_observations, historical_observations
+            )
 
             # --- persist assets/services ---
             hosts_up = 0
@@ -163,6 +216,44 @@ async def run_scan(scan_id: int, worker_id: str) -> None:
                 risk_sum += risk
                 risk_n += 1
 
+            await session.flush()
+            finding_rows = (
+                await session.execute(select(Finding).where(Finding.scan_id == scan_id))
+            ).scalars().all()
+            asset_ips = {asset.id: ip for ip, asset in assets_by_ip.items()}
+            risk_scores = {asset.id: asset.risk_score for asset in assets_by_ip.values()}
+            finding_data = [
+                {
+                    "id": finding.id,
+                    "asset_id": finding.asset_id,
+                    "asset_ip": asset_ips.get(finding.asset_id),
+                    "rule_id": finding.rule_id,
+                    "title": finding.title,
+                    "severity": finding.severity,
+                }
+                for finding in finding_rows
+            ]
+            review_order = prioritize_findings(finding_data, asset_ips, risk_scores)
+            observations_by_ip = {
+                observation["ip"]: observation for observation in current_observations
+            }
+            verifications = verify_claims(finding_data, observations_by_ip)
+
+            session.add(
+                ScanPipelineRun(
+                    scan_id=scan_id,
+                    evidence_changes=[
+                        change.model_dump(mode="json") for change in evidence_changes
+                    ],
+                    review_order=[
+                        item.model_dump(mode="json") for item in review_order
+                    ],
+                    verifications=[
+                        item.model_dump(mode="json") for item in verifications
+                    ],
+                )
+            )
+
             scan.findings_count = findings_count
             scan.ports_found = ports_found
             scan.hosts_up = hosts_up
@@ -194,6 +285,36 @@ async def run_scan(scan_id: int, worker_id: str) -> None:
 def _session_factory():
     from app.core.db import get_session_factory
     return get_session_factory()
+
+
+async def _load_historical_observations(
+    session, scan_id: int, host_ips: list[str]
+) -> dict[str, dict]:
+    if not host_ips:
+        return {}
+    result = await session.execute(
+        select(ScanObservation)
+        .join(ScanJob, ScanJob.id == ScanObservation.scan_id)
+        .where(
+            ScanObservation.ip.in_(host_ips),
+            ScanObservation.scan_id < scan_id,
+            ScanJob.status == "completed",
+        )
+        .order_by(ScanObservation.scan_id.desc())
+    )
+    historical: dict[str, dict] = {}
+    for observation in result.scalars().all():
+        historical.setdefault(
+            observation.ip,
+            {
+                "scan_id": observation.scan_id,
+                "ip": observation.ip,
+                "host_alive": observation.host_alive,
+                "ports_scanned": observation.ports_scanned,
+                "port_checks": observation.port_checks,
+            },
+        )
+    return historical
 
 
 def _discovery_backend():

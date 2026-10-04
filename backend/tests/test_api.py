@@ -44,6 +44,24 @@ def test_scan_preview_validates_scope_without_queuing(client):
     assert client.get("/scans").json() == []
 
 
+def test_plan_endpoint_accepts_plain_text_or_scan_request(client):
+    plain_text = client.post(
+        "/scans/plan",
+        json={"scan": "targets: 127.0.0.1\nports: 80,443"},
+    )
+    assert plain_text.status_code == 200
+    assert plain_text.json()["host_ips"] == ["127.0.0.1"]
+    assert plain_text.json()["ports"] == [80, 443]
+    assert plain_text.json()["check_count"] == 2
+
+    request = client.post(
+        "/scans/plan",
+        json={"scan": {"targets": "127.0.0.1", "ports": "22"}},
+    )
+    assert request.status_code == 200
+    assert request.json()["ports"] == [22]
+
+
 def test_scan_preview_rejects_unauthorized_scope_and_bad_ports(client):
     unauthorized = client.post(
         "/scans/preview",
@@ -108,3 +126,9 @@ def test_get_missing_scan_404(client):
     r = client.get("/scans/99999")
     assert r.status_code == 404
     assert r.json()["error"]["code"] == "not_found"
+
+
+def test_explanation_for_missing_finding_returns_404(client):
+    response = client.post("/findings/99999/explanation")
+    assert response.status_code == 404
+    assert response.json()["error"]["code"] == "not_found"
