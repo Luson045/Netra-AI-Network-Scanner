@@ -7,7 +7,15 @@ import pytest
 from sqlalchemy import select
 
 from app.core.db import session_scope
-from app.models import Asset, Finding, ScanJob, Service
+from app.models import (
+    Asset,
+    Finding,
+    ScanJob,
+    ScanObservation,
+    ScanPipelineRun,
+    Service,
+)
+from app.schemas.pipeline import ScanPipelineOut
 from app.workers.scan_worker import _claim_next_scan, _run_one
 
 
@@ -64,5 +72,21 @@ async def test_full_scan_flow(monkeypatch, tmp_path, open_local_port):
         findings = (await session.execute(select(Finding))).scalars().all()
         # port 1 closed; the ephemeral high port is unknown to rules -> maybe zero findings
         assert isinstance(findings, list)
+
+        observations = (
+            await session.execute(select(ScanObservation).where(ScanObservation.scan_id == claimed))
+        ).scalars().all()
+        assert len(observations) == 1
+        assert open_local_port in [
+            check["port"] for check in observations[0].port_checks
+            if check["state"] == "open"
+        ]
+
+        pipeline = await session.get(ScanPipelineRun, claimed)
+        assert pipeline is not None
+        assert pipeline.evidence_changes[0]["change"] == "baseline"
+        assert isinstance(pipeline.review_order, list)
+        assert isinstance(pipeline.verifications, list)
+        assert ScanPipelineOut.model_validate(pipeline).scan_id == claimed
 
     await dispose_engine()

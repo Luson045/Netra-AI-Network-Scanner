@@ -17,6 +17,11 @@ class Settings(BaseSettings):
     # Database: Postgres in docker, SQLite fallback for zero-setup local runs
     database_url: str = "sqlite+aiosqlite:///./data/netguard.db"
 
+    # Ollama is optional and is contacted only when a user requests an AI explanation.
+    ollama_base_url: str = "http://127.0.0.1:11434"
+    ollama_model: str = "llama3.2:3b"
+    ollama_timeout_secs: float = 120.0
+
     # CORS (comma-separated origins)
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
 

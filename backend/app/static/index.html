@@ -92,13 +92,34 @@
                   <label class="field-label" for="scan-name">SCAN NAME <span class="optional">OPTIONAL</span></label>
                   <input class="text-input" id="scan-name" name="name" maxlength="200" placeholder="e.g. Home office check">
 
-                  <label class="field-label" for="scan-targets">TARGETS <span class="required-mark">*</span></label>
-                  <input class="text-input mono-input" id="scan-targets" name="targets" required value="127.0.0.1" placeholder="127.0.0.1 or 192.168.1.0/28">
-                  <div class="field-hint">IP addresses or CIDR ranges, separated by commas. Private and loopback targets only by default.</div>
+                  <span class="field-label">TARGET PRESETS</span>
+                  <div class="preset-list" aria-label="Target presets">
+                    <label class="preset-option"><input type="checkbox" name="target-preset" value="127.0.0.1" checked><span><strong>This computer</strong><small>127.0.0.1 · loopback</small></span></label>
+                    <label class="preset-option"><input type="checkbox" name="target-preset" value="192.168.1.0/24"><span><strong>Private LAN example</strong><small>192.168.1.0/24 · change to your authorized subnet</small></span></label>
+                    <label class="preset-option"><input type="checkbox" name="target-preset" value="10.0.0.0/24"><span><strong>Private network example</strong><small>10.0.0.0/24 · change to your authorized subnet</small></span></label>
+                  </div>
+                  <label class="field-label" for="scan-targets">OR ADD TARGETS <span class="optional">OPTIONAL</span></label>
+                  <input class="text-input mono-input" id="scan-targets" name="targets" placeholder="IP addresses, CIDRs, or hostnames">
+                  <div class="field-hint">Selections and typed targets are combined. Scan only systems you own or are authorized to assess.</div>
 
-                  <label class="field-label" for="scan-ports">TCP PORTS <span class="optional">OPTIONAL</span></label>
-                  <input class="text-input mono-input" id="scan-ports" name="ports" placeholder="22,80,443,8000" value="22,80,443,8000">
-                  <div class="field-hint">Comma-separated ports or ranges. Leave blank for the built-in common-port set.</div>
+                  <span class="field-label">COMMON TCP PORTS</span>
+                  <div class="preset-list port-presets" aria-label="Common TCP port presets">
+                    <label class="preset-option"><input type="checkbox" name="port-preset" value="22" checked><span><strong>22</strong><small>SSH</small></span></label>
+                    <label class="preset-option"><input type="checkbox" name="port-preset" value="80" checked><span><strong>80</strong><small>HTTP</small></span></label>
+                    <label class="preset-option"><input type="checkbox" name="port-preset" value="443" checked><span><strong>443</strong><small>HTTPS</small></span></label>
+                    <label class="preset-option"><input type="checkbox" name="port-preset" value="8000" checked><span><strong>8000</strong><small>Web app</small></span></label>
+                    <label class="preset-option"><input type="checkbox" name="port-preset" value="21"><span><strong>21</strong><small>FTP</small></span></label>
+                    <label class="preset-option"><input type="checkbox" name="port-preset" value="23"><span><strong>23</strong><small>Telnet</small></span></label>
+                    <label class="preset-option"><input type="checkbox" name="port-preset" value="445"><span><strong>445</strong><small>SMB</small></span></label>
+                    <label class="preset-option"><input type="checkbox" name="port-preset" value="3306"><span><strong>3306</strong><small>MySQL</small></span></label>
+                    <label class="preset-option"><input type="checkbox" name="port-preset" value="3389"><span><strong>3389</strong><small>RDP</small></span></label>
+                    <label class="preset-option"><input type="checkbox" name="port-preset" value="5432"><span><strong>5432</strong><small>PostgreSQL</small></span></label>
+                    <label class="preset-option"><input type="checkbox" name="port-preset" value="6379"><span><strong>6379</strong><small>Redis</small></span></label>
+                    <label class="preset-option"><input type="checkbox" name="port-preset" value="9200"><span><strong>9200</strong><small>Elasticsearch</small></span></label>
+                  </div>
+                  <label class="field-label" for="scan-ports">OR ADD PORTS <span class="optional">OPTIONAL</span></label>
+                  <input class="text-input mono-input" id="scan-ports" name="ports" placeholder="e.g. 8080 or 8000-8010">
+                  <div class="field-hint">Selected and typed ports are combined. Uncheck all and leave blank to use the built-in common-port set.</div>
 
                   <label class="confirm-row" for="scan-authorized">
                     <input type="checkbox" id="scan-authorized" required>
@@ -140,7 +161,7 @@
               <div class="table-wrap"><table><thead><tr><th>DEVICE</th><th>ADDRESS</th><th>OPEN SERVICES</th><th>RISK</th><th>LAST SEEN</th></tr></thead><tbody id="asset-preview-body"></tbody></table></div>
               <div class="table-empty" id="asset-preview-empty" hidden><span class="empty-table-icon">⌘</span><strong>No assets discovered yet</strong><span>Run your first scan to build a local inventory.</span></div>
             </section>
-            <div class="workflow-note"><span class="workflow-icon">⌁</span><span><strong>How it works</strong><br>Review scope <b>→</b> safe TCP checks <b>→</b> local history <b>→</b> deterministic findings</span><span class="workflow-tag">AI DISABLED IN MVP</span></div>
+            <div class="workflow-note"><span class="workflow-icon">⌁</span><span><strong>How it works</strong><br>Review scope <b>→</b> safe TCP checks <b>→</b> local history <b>→</b> deterministic findings</span><span class="workflow-tag">OPTIONAL LOCAL AI</span></div>
           </section>
 
           <section class="view-panel" id="view-assets">
@@ -149,8 +170,8 @@
           </section>
 
           <section class="view-panel" id="view-findings">
-            <div class="page-heading simple-heading"><div><div class="eyebrow"><span class="eyebrow-line"></span> RULE-BASED REVIEW</div><h1>Security findings</h1><p class="page-subtitle">Deterministic checks with evidence and practical next steps.</p></div></div>
-            <section class="panel full-table-panel"><div class="panel-heading"><div><h2>Open findings</h2><p class="panel-description">Finding severity comes from local rules, not AI.</p></div><span class="result-count" id="finding-result-count">0 findings</span></div><div class="table-wrap"><table class="findings-table"><thead><tr><th>SEVERITY</th><th>FINDING</th><th>DEVICE</th><th>OBSERVED EVIDENCE</th><th>STATUS</th></tr></thead><tbody id="finding-table-body"></tbody></table></div><div class="table-empty" id="finding-empty" hidden><span class="empty-table-icon">✓</span><strong>No open findings</strong><span>Run a scan to review locally detected issues.</span></div></section>
+            <div class="page-heading simple-heading"><div><div class="eyebrow"><span class="eyebrow-line"></span> EVIDENCE-BASED REVIEW</div><h1>Security findings</h1><p class="page-subtitle">Choose deterministic rule-based explanations or request an AI explanation from your local Ollama model.</p></div></div>
+            <section class="panel full-table-panel"><div class="panel-heading"><div><h2>Open findings</h2><p class="panel-description">AI explanations are generated on demand on this device. They can be imperfect; verify against the recorded evidence.</p></div><span class="result-count" id="finding-result-count">0 findings</span></div><div class="table-wrap"><table class="findings-table"><thead><tr><th>SEVERITY</th><th>FINDING &amp; EXPLANATION</th><th>DEVICE</th><th>OBSERVED EVIDENCE</th><th>STATUS</th></tr></thead><tbody id="finding-table-body"></tbody></table></div><div class="table-empty" id="finding-empty" hidden><span class="empty-table-icon">✓</span><strong>No open findings</strong><span>Run a scan to review locally detected issues.</span></div></section>
           </section>
 
           <section class="view-panel" id="view-history">
