@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#080e19">
+    <meta
+      name="description"
+      content="Netra gives you a clear, local view of network devices, open services, and rule-based security findings."
+    >
+    <title>Netra — See your network clearly</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="script.js" defer></script>
+  </head>
+  <body>
+    <div class="page-glow page-glow--top" aria-hidden="true"></div>
+    <div class="page-glow page-glow--bottom" aria-hidden="true"></div>
+
+    <header class="site-header">
+      <a class="brand" href="#" aria-label="Netra home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 36 36" fill="none">
+            <path d="M18 3.75 30 10.5v15L18 32.25 6 25.5v-15L18 3.75Z" stroke="currentColor" stroke-width="1.5"/>
+            <circle cx="18" cy="18" r="4.25" fill="currentColor"/>
+            <path d="M18 9v4M27 18h-4M18 27v-4M9 18h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <span class="brand-name">netra<span class="brand-period">.</span></span>
+      </a>
+
+      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav">
+        <span></span><span></span>
+        <span class="sr-only">Toggle navigation</span>
+      </button>
+
+      <nav class="site-nav" id="site-nav" aria-label="Main navigation">
+        <a href="#overview">Overview</a>
+        <a href="#features">What you get</a>
+        <a href="#how-it-works">How it works</a>
+      </nav>
+
+      <a class="header-cta" href="#how-it-works">
+        Explore Netra <span aria-hidden="true">↗</span>
+      </a>
+    </header>
+
+    <main>
+      <section class="hero section-shell" id="overview">
+        <div class="hero-copy">
+          <div class="eyebrow"><span class="eyebrow-pulse"></span> NETWORK VISIBILITY, WITHOUT THE NOISE</div>
+          <h1>Know what’s<br>on your network<span class="headline-dot">.</span></h1>
+          <p class="hero-description">
+            A clear, considered view of the devices and services on your network.
+            Scan an authorized scope, understand what responds, and keep your results
+            <span class="local-word">local</span>.
+          </p>
+          <div class="hero-actions">
+            <a class="button button-primary" href="#how-it-works">
+              See how it works <span aria-hidden="true">→</span>
+            </a>
+            <a class="button button-quiet" href="#features">
+              Discover Netra <span class="play-icon" aria-hidden="true">⌄</span>
+            </a>
+          </div>
+          <div class="hero-assurance">
+            <span class="assurance-icon" aria-hidden="true">
+              <svg viewBox="0 0 20 20" fill="none"><path d="M10 2.2 16 4.5v4.7c0 4-2.6 6.9-6 8.6-3.4-1.7-6-4.6-6-8.6V4.5l6-2.3Z" stroke="currentColor" stroke-width="1.4"/><path d="m7.4 9.8 1.7 1.7 3.5-3.7" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </span>
+            <span><strong>Local by design</strong><span class="assurance-sub">Your scan history stays on your device</span></span>
+          </div>
+        </div>
+
+        <div class="hero-visual" id="preview" aria-label="Illustrative preview of the Netra local network dashboard">
+          <div class="visual-orbit visual-orbit--one" aria-hidden="true"></div>
+          <div class="visual-orbit visual-orbit--two" aria-hidden="true"></div>
+          <div class="dashboard-window">
+            <div class="window-bar">
+              <div class="window-brand"><span class="mini-brand">N</span> NETRA <span class="window-divider">/</span> OVERVIEW</div>
+              <div class="window-status"><span class="status-dot"></span> LOCAL SERVICE</div>
+              <div class="window-avatar">L</div>
+            </div>
+            <div class="dashboard-body">
+              <div class="dashboard-intro">
+                <div><span class="micro-label">YOUR NETWORK AT A GLANCE</span><h2>Good morning<span class="teal-text">.</span></h2></div>
+                <div class="scan-date"><span class="calendar-icon">◷</span> SCAN PREVIEW</div>
+              </div>
+              <div class="metric-grid">
+                <div class="metric-card"><span class="metric-label">DEVICES FOUND</span><strong>08</strong><span class="metric-note"><i class="tiny-dot tiny-dot--teal"></i> In your scan scope</span></div>
+                <div class="metric-card"><span class="metric-label">OPEN SERVICES</span><strong>12</strong><span class="metric-note"><i class="tiny-dot tiny-dot--blue"></i> TCP responses</span></div>
+                <div class="metric-card"><span class="metric-label">FINDINGS</span><strong>03</strong><span class="metric-note"><i class="tiny-dot tiny-dot--amber"></i> Rule-based review</span></div>
+              </div>
+              <div class="dashboard-lower">
+                <div class="chart-card">
+                  <div class="card-topline"><span>DEVICE ACTIVITY</span><span class="chart-period">LAST SCAN <b>⌄</b></span></div>
+                  <div class="chart-graphic">
+                    <div class="chart-y-labels"><span>08</span><span>04</span><span>00</span></div>
+                    <svg class="activity-chart" viewBox="0 0 400 114" preserveAspectRatio="none" role="img" aria-label="Illustrative chart of discovered devices">
+                      <defs><linearGradient id="chartFill" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#31d6bf" stop-opacity=".3"/><stop offset="1" stop-color="#31d6bf" stop-opacity="0"/></linearGradient></defs>
+                      <path class="chart-grid-line" d="M0 17.5H400M0 56.5H400M0 95.5H400"/>
+                      <path class="chart-area" d="M0 86 C22 84 24 72 46 76 S73 62 94 68 S122 44 143 55 S167 63 190 47 S218 57 237 40 S267 50 284 32 S313 42 333 26 S367 37 400 11 V114H0Z"/>
+                      <path class="chart-line" d="M0 86 C22 84 24 72 46 76 S73 62 94 68 S122 44 143 55 S167 63 190 47 S218 57 237 40 S267 50 284 32 S313 42 333 26 S367 37 400 11"/>
+                      <circle cx="400" cy="11" r="4" fill="#31d6bf" stroke="#101c2c" stroke-width="3"/>
+                    </svg>
+                  </div>
+                  <div class="chart-x-labels"><span>START</span><span>SCANNING</span><span>COMPLETE</span></div>
+                </div>
+                <div class="scope-card">
+                  <div class="card-topline"><span>SCAN SCOPE</span><span class="scope-lock" aria-label="Local">⌑</span></div>
+                  <div class="scope-address">192.168.1.0<span>/</span>28</div>
+                  <div class="scope-progress"><span></span></div>
+                  <div class="scope-foot"><span>TCP CHECKS</span><strong>BOUNDED</strong></div>
+                </div>
+              </div>
+              <div class="dashboard-footer"><span><i class="tiny-dot tiny-dot--teal"></i> DATA STORED LOCALLY</span><span>ILLUSTRATIVE PREVIEW</span></div>
+            </div>
+          </div>
+          <div class="floating-chip floating-chip--top"><span class="chip-spark">✳</span> SCOPE FIRST</div>
+          <div class="floating-chip floating-chip--bottom"><span class="chip-check">✓</span> YOUR DEVICE. YOUR DATA.</div>
+        </div>
+        <div class="hero-bottom-note"><span class="note-line"></span> MADE FOR A CLEARER VIEW OF YOUR OWN NETWORK</div>
+      </section>
+
+      <section class="trust-strip" aria-label="Product principles">
+        <div class="trust-item"><span class="trust-symbol">⌂</span><span>Runs on your machine</span></div>
+        <div class="trust-item"><span class="trust-symbol">◎</span><span>Authorized scope only</span></div>
+        <div class="trust-item"><span class="trust-symbol">⌁</span><span>Deterministic findings</span></div>
+        <div class="trust-item"><span class="trust-symbol">◷</span><span>History stored locally</span></div>
+      </section>
+
+      <section class="features section-shell section-pad" id="features">
+        <div class="section-heading" data-reveal>
+          <div>
+            <div class="eyebrow"><span class="eyebrow-pulse"></span> A CALMER WAY TO SEE THE DETAILS</div>
+            <h2>Less guesswork.<br><span class="muted-heading">More useful context.</span></h2>
+          </div>
+          <p>Netra brings network discovery and practical review together in one focused, locally run workspace.</p>
+        </div>
+
+        <div class="feature-grid">
+          <article class="feature-card feature-card--large" data-reveal>
+            <div class="feature-illustration illustration-network" aria-hidden="true">
+              <span class="network-line network-line--one"></span><span class="network-line network-line--two"></span><span class="network-line network-line--three"></span>
+              <span class="network-node node-router"><span>⌂</span></span>
+              <span class="network-node node-laptop"><span>▱</span></span>
+              <span class="network-node node-device"><span>▯</span></span>
+              <span class="network-node node-phone"><span>▯</span></span>
+              <span class="network-caption">LOCAL INVENTORY</span>
+            </div>
+            <div class="feature-copy"><span class="feature-number">01 / DISCOVER</span><h3>A clearer device inventory</h3><p>See responding devices and the TCP services found in your approved scan scope. Keep the results together in a readable local dashboard.</p></div>
+          </article>
+          <article class="feature-card" data-reveal>
+            <div class="feature-illustration illustration-scope" aria-hidden="true">
+              <div class="scope-ring"><div class="scope-inner"><span>✓</span><small>SCOPE<br>REVIEWED</small></div><i class="ring-point ring-point--one"></i><i class="ring-point ring-point--two"></i><i class="ring-point ring-point--three"></i></div>
+              <span class="scope-code">192.168.1.0/28</span>
+            </div>
+            <div class="feature-copy"><span class="feature-number">02 / STAY IN CONTROL</span><h3>Scope before scanning</h3><p>Preview and review targets before a scan starts. You confirm you have authorization and approve the scope.</p></div>
+          </article>
+          <article class="feature-card" data-reveal>
+            <div class="feature-illustration illustration-findings" aria-hidden="true">
+              <div class="finding-row"><span class="finding-mark finding-mark--amber">!</span><span class="finding-lines"><i></i><i></i></span><span class="finding-tag">REVIEW</span></div>
+              <div class="finding-row"><span class="finding-mark finding-mark--blue">i</span><span class="finding-lines"><i></i><i></i></span><span class="finding-tag">INFO</span></div>
+              <div class="finding-row"><span class="finding-mark finding-mark--teal">✓</span><span class="finding-lines"><i></i><i></i></span><span class="finding-tag">RULE</span></div>
+            </div>
+            <div class="feature-copy"><span class="feature-number">03 / UNDERSTAND</span><h3>Findings with evidence</h3><p>Review deterministic, rule-based observations with evidence and practical next steps. No opaque AI analysis in this MVP.</p></div>
+          </article>
+        </div>
+      </section>
+
+      <section class="privacy-band">
+        <div class="privacy-inner section-shell">
+          <div class="privacy-visual" data-reveal aria-hidden="true">
+            <div class="privacy-glow"></div>
+            <div class="privacy-core">
+              <svg viewBox="0 0 80 80" fill="none"><path d="M40 8 65 18v19.5C65 54 54.2 66 40 73 25.8 66 15 54 15 37.5V18L40 8Z" stroke="currentColor" stroke-width="2"/><path d="M40 25a9 9 0 0 0-9 9v5h18v-5a9 9 0 0 0-9-9Z" stroke="currentColor" stroke-width="2"/><rect x="27" y="39" width="26" height="19" rx="4" stroke="currentColor" stroke-width="2"/><circle cx="40" cy="48" r="2.5" fill="currentColor"/></svg>
+              <span>LOCAL<br>BY DESIGN</span>
+            </div>
+            <span class="privacy-orbit privacy-orbit--a"></span><span class="privacy-orbit privacy-orbit--b"></span>
+            <span class="privacy-label privacy-label--one">ON-DEVICE HISTORY</span><span class="privacy-label privacy-label--two">LOOPBACK SERVICE</span>
+          </div>
+          <div class="privacy-copy" data-reveal>
+            <div class="eyebrow"><span class="eyebrow-pulse"></span> YOUR NETWORK DATA IS YOURS</div>
+            <h2>Insight, without<br><span class="teal-text">sending it away.</span></h2>
+            <p>Netra serves its dashboard and API from your own machine. Scan data is saved to a local database—not sent to a hosted service.</p>
+            <div class="privacy-points">
+              <div><span class="point-check">✓</span><span><strong>Local scan history</strong><small>Results are stored in a local SQLite database.</small></span></div>
+              <div><span class="point-check">✓</span><span><strong>No hosted analysis</strong><small>Findings come from clear, deterministic rules.</small></span></div>
+              <div><span class="point-check">✓</span><span><strong>Bounded TCP checks</strong><small>No credentials, exploit attempts, or stealth scans.</small></span></div>
+            </div>
+            <span class="privacy-footnote">Scan only networks you own or have permission to assess.</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="workflow section-shell section-pad" id="how-it-works">
+        <div class="workflow-heading" data-reveal>
+          <div class="eyebrow"><span class="eyebrow-pulse"></span> SIMPLE BY INTENTION</div>
+          <h2>Know the steps.<br><span class="muted-heading">Stay in control.</span></h2>
+          <p>A focused workflow from scope to useful, local results.</p>
+        </div>
+        <div class="workflow-steps">
+          <article class="workflow-step" data-reveal><span class="step-number">01</span><span class="step-icon">⌕</span><h3>Choose a scope</h3><p>Enter a private or loopback target and a short list of TCP ports.</p><span class="step-connector" aria-hidden="true"></span></article>
+          <article class="workflow-step" data-reveal><span class="step-number">02</span><span class="step-icon">✓</span><h3>Review & approve</h3><p>Confirm authorization, check the validated scope, then approve the scan.</p><span class="step-connector" aria-hidden="true"></span></article>
+          <article class="workflow-step" data-reveal><span class="step-number">03</span><span class="step-icon">⌁</span><h3>Understand results</h3><p>Explore discovered assets, open services, findings, and local scan history.</p><span class="step-connector" aria-hidden="true"></span></article>
+          <article class="workflow-step" data-reveal><span class="step-number">04</span><span class="step-icon">◷</span><h3>Keep it yours</h3><p>Return to your saved results on this device. Press Ctrl+C to stop the app.</p></article>
+        </div>
+        <div class="workflow-cta" data-reveal>
+          <div class="cta-orb" aria-hidden="true">N</div>
+          <div><span class="micro-label">A MORE GROUNDED VIEW STARTS HERE</span><h3>Get to know your network.</h3></div>
+          <a class="button button-primary" href="#overview">Back to the top <span aria-hidden="true">↑</span></a>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <a class="brand footer-brand" href="#" aria-label="Netra home">
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 36 36" fill="none"><path d="M18 3.75 30 10.5v15L18 32.25 6 25.5v-15L18 3.75Z" stroke="currentColor" stroke-width="1.5"/><circle cx="18" cy="18" r="4.25" fill="currentColor"/><path d="M18 9v4M27 18h-4M18 27v-4M9 18h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
+        <span class="brand-name">netra<span class="brand-period">.</span></span>
+      </a>
+      <span class="footer-caption">LOCAL NETWORK VISIBILITY, MADE CLEAR.</span>
+      <span class="footer-status"><i class="status-dot"></i> BUILT FOR YOUR DEVICE</span>
+    </footer>
+  </body>
+</html>
