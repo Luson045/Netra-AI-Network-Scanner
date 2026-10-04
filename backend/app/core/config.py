@@ -9,7 +9,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
-    app_name: str = "NetGuard"
+    app_name: str = "Netra AI"
     app_env: str = "local"  # local | docker | test | production
     debug: bool = True
     log_level: str = "INFO"
@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     # Database: Postgres in docker, SQLite fallback for zero-setup local runs
     database_url: str = "sqlite+aiosqlite:///./data/netguard.db"
 
-    # Ollama is optional and is contacted only when a user requests an AI explanation.
+    # Ollama is contacted for Deep Scan agent planning/analysis and requested explanations.
     ollama_base_url: str = "http://127.0.0.1:11434"
     ollama_model: str = "llama3.2:3b"
     ollama_timeout_secs: float = 120.0

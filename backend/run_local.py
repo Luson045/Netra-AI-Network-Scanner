@@ -1,4 +1,4 @@
-"""Start the local NetGuard API, dashboard, and scan worker with one command."""
+"""Start the local Netra AI API, dashboard, and scan worker with one command."""
 
 from __future__ import annotations
 

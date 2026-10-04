@@ -18,7 +18,9 @@ class ScanJob(Base):
     __tablename__ = "scan_jobs"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    name: Mapped[str] = "Unnamed scan"
+    name: Mapped[str] = mapped_column(
+        String(200), default="Unnamed scan", server_default="Unnamed scan", nullable=False
+    )
     target_spec: Mapped[str] = mapped_column(String(512))  # original user input
     port_spec: Mapped[str | None] = mapped_column(String(256), nullable=True)  # e.g. "22,80,8000-8100"
     targets: Mapped[str] = mapped_column(Text)             # expanded, one CIDR/IP per line

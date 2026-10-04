@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 from typing import Any
 
-from sqlalchemy import text
+from sqlalchemy import inspect, text
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_engine
@@ -21,7 +21,19 @@ async def init_db() -> None:
 
     async with engine.begin() as conn:
         await conn.run_sync(lambda sync_conn: base.Base.metadata.create_all(sync_conn))
+        await conn.run_sync(_ensure_scan_name_column)
     logger.info("Database schema ensured")
+
+
+def _ensure_scan_name_column(connection) -> None:
+    columns = {column["name"] for column in inspect(connection).get_columns("scan_jobs")}
+    if "name" not in columns:
+        connection.execute(
+            text(
+                "ALTER TABLE scan_jobs ADD COLUMN name VARCHAR(200) "
+                "DEFAULT 'Unnamed scan' NOT NULL"
+            )
+        )
 
 
 async def safe_init_db(session: AsyncSession | None = None) -> None:

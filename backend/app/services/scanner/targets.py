@@ -2,7 +2,7 @@
 
 Accepts input like "127.0.0.1, 192.168.1.0/30, localhost" and produces normalized
 network strings, concrete host IPs, and the port list. Public targets are denied
-by default: NetGuard only scans networks the user owns or is authorized to assess.
+by default: Netra AI only scans networks the user owns or is authorized to assess.
 """
 
 from __future__ import annotations
@@ -155,7 +155,7 @@ def parse_targets(target_spec: str) -> tuple[list[str], list]:
         sample = ", ".join(str(h) for h in unauthorized[:5])
         raise TargetNotAuthorizedError(
             f"The following targets are outside the authorized scope: {sample}. "
-            "NetGuard only scans networks you own or are explicitly authorized to assess "
+            "Netra AI only scans networks you own or are explicitly authorized to assess "
             "(configure TARGET_ALLOWLIST for other ranges)."
         )
 

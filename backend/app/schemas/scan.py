@@ -33,6 +33,7 @@ class ScanOut(BaseModel):
     max_risk_score: int
     avg_risk_score: float
     status: str
+    deep_scan: bool = False
     error_message: str | None
     created_at: datetime
     started_at: datetime | None

@@ -4,22 +4,36 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, Query, WebSocket, WebSocketDisconnect
-from sqlalchemy import desc, select
+from sqlalchemy import delete, desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.db import get_db
-from app.core.errors import NotFoundError, ScanStateError
+from app.core.config import settings
+from app.core.errors import NotFoundError, ScanStateError, ValidationError
 from app.core.utils import progress_hub
-from app.models import Asset, Finding, ScanJob
+from app.models import Asset, DeepScanRun, Finding, ScanJob, ScanObservation, Service
 from app.models.enums import ACTIVE_SCAN_STATUSES
 from app.models.scan import utcnow
 from app.schemas.scan import ScanCreate, ScanHistoryPoint, ScanOut, ScanProgressOut
 from app.schemas.pipeline import ScanPipelineOut, ScanPlan, ScanPlanInput
 from app.models import ScanPipelineRun
 from app.services.pipeline import build_scan_plan
+from app.schemas.deep_scan import (
+    DeepScanApproval,
+    DeepScanCreate,
+    DeepScanQueued,
+    DeepScanResult,
+)
+from app.services.deep_agents import (
+    PORT_CANDIDATES,
+    analyze_deep_scan,
+    create_agent_port_plan,
+)
+from app.services.analysis.risk import compute_asset_risk
+from app.services.analysis.rules import run_analysis_rules
 
 logger = logging.getLogger("app.api.scans")
 
@@ -62,6 +76,89 @@ async def create_scan(payload: ScanCreate, db: AsyncSession = Depends(get_db)):
     return scan
 
 
+@router.post("/deep/plan")
+async def plan_deep_scan(payload: DeepScanCreate):
+    """Ask the local planning agent to propose a bounded port plan for review."""
+    plan, model = await create_agent_port_plan(payload.targets, payload.name)
+    return {"plan": {**plan, "model": model}}
+
+
+@router.post("/deep", response_model=DeepScanQueued, status_code=201)
+async def create_deep_scan(payload: DeepScanApproval, db: AsyncSession = Depends(get_db)):
+    """Queue a user-approved local-agent port plan after revalidating its scope."""
+    if len(set(payload.ports)) != len(payload.ports) or not set(payload.ports).issubset(
+        PORT_CANDIDATES
+    ):
+        raise ValidationError("Deep Scan ports must come from the agent's approved port list")
+    validated = build_scan_plan(
+        ScanCreate(
+            targets=payload.targets,
+            ports=",".join(map(str, payload.ports)),
+            name=payload.name,
+        )
+    )
+    plan = {
+        "target_spec": validated.target_spec,
+        "targets": validated.targets,
+        "host_ips": validated.host_ips,
+        "ports": validated.ports,
+        "check_count": validated.check_count,
+        "rationale": payload.rationale,
+    }
+    model = settings.ollama_model
+    scan = ScanJob(
+        name=payload.name or f"Deep scan {utcnow().strftime('%Y-%m-%d %H:%M')}",
+        target_spec=validated.target_spec,
+        port_spec=",".join(map(str, validated.ports)),
+        targets="\n".join(validated.targets),
+        status="pending",
+    )
+    db.add(scan)
+    await db.flush()
+    db.add(DeepScanRun(scan_id=scan.id, plan=plan, model=model))
+    await db.commit()
+    await db.refresh(scan)
+    scan.deep_scan = True
+    return DeepScanQueued(scan=scan, plan={**plan, "model": model})
+
+
+@router.post("/{scan_id}/deep-analysis", response_model=DeepScanResult)
+async def run_deep_scan_analysis(scan_id: int, db: AsyncSession = Depends(get_db)):
+    scan = await db.get(ScanJob, scan_id)
+    if scan is None:
+        raise NotFoundError("Scan not found")
+    if scan.status != "completed":
+        raise ScanStateError("Deep Scan analysis is available after the scan completes")
+    agent_run = await db.get(DeepScanRun, scan_id)
+    if agent_run is None:
+        raise ScanStateError("This scan was not created as a Deep Scan")
+
+    if agent_run.analysis is None:
+        pipeline = await db.get(ScanPipelineRun, scan_id)
+        if pipeline is None:
+            raise ScanStateError("Measured scan results are not available for analysis")
+        pipeline_data = {
+            "evidence_changes": pipeline.evidence_changes,
+            "review_order": pipeline.review_order,
+            "verifications": pipeline.verifications,
+        }
+        analysis, model = await analyze_deep_scan(
+            agent_run.plan, pipeline_data, scan.name
+        )
+        agent_run.analysis = analysis
+        agent_run.model = model
+        agent_run.analyzed_at = utcnow()
+        await db.commit()
+
+    return DeepScanResult(
+        scan_id=scan_id,
+        plan={**agent_run.plan, "model": agent_run.model},
+        analysis=agent_run.analysis,
+        model=agent_run.model,
+        analyzed_at=agent_run.analyzed_at.isoformat() if agent_run.analyzed_at else None,
+    )
+
+
 @router.get("/{scan_id}/pipeline", response_model=ScanPipelineOut)
 async def get_scan_pipeline(scan_id: int, db: AsyncSession = Depends(get_db)):
     """Return the persisted change analysis, review order, and claim checks."""
@@ -86,7 +183,14 @@ async def list_scans(
         q = q.where(ScanJob.status == status)
     q = q.offset(offset).limit(limit)
     result = await db.execute(q)
-    return result.scalars().all()
+    scans = result.scalars().all()
+    deep_runs = await db.execute(
+        select(DeepScanRun.scan_id).where(DeepScanRun.scan_id.in_([scan.id for scan in scans]))
+    ) if scans else None
+    deep_ids = set(deep_runs.scalars().all()) if deep_runs is not None else set()
+    for scan in scans:
+        scan.deep_scan = scan.id in deep_ids
+    return scans
 
 
 @router.get("/history", response_model=list[ScanHistoryPoint])
@@ -117,6 +221,7 @@ async def get_scan(scan_id: int, db: AsyncSession = Depends(get_db)):
     scan = await db.get(ScanJob, scan_id)
     if scan is None:
         raise NotFoundError("Scan not found")
+    scan.deep_scan = await db.get(DeepScanRun, scan_id) is not None
     return scan
 
 
@@ -153,13 +258,130 @@ async def cancel_scan(scan_id: int, db: AsyncSession = Depends(get_db)):
     return scan
 
 
+@router.delete("")
+async def delete_scan_history(db: AsyncSession = Depends(get_db)):
+    scans = (await db.execute(select(ScanJob))).scalars().all()
+    active = [scan.id for scan in scans if scan.status in ACTIVE_SCAN_STATUSES]
+    removable = [scan.id for scan in scans if scan.status not in ACTIVE_SCAN_STATUSES]
+    await _delete_scan_records(db, removable, rebuild_inventory=False)
+    for model in (ScanPipelineRun, ScanObservation, DeepScanRun):
+        statement = delete(model)
+        if active:
+            statement = statement.where(model.scan_id.not_in(active))
+        await db.execute(statement)
+    await db.execute(delete(Finding))
+    await db.execute(delete(Service))
+    await db.execute(delete(Asset))
+    await db.commit()
+    return {"deleted_count": len(removable), "retained_active_count": len(active)}
+
+
 @router.delete("/{scan_id}", status_code=204)
 async def delete_scan(scan_id: int, db: AsyncSession = Depends(get_db)):
     scan = await db.get(ScanJob, scan_id)
     if scan is None:
         raise NotFoundError("Scan not found")
-    await db.delete(scan)
+    if scan.status in ACTIVE_SCAN_STATUSES:
+        raise ScanStateError("Stop the scan before deleting it from history")
+    await _delete_scan_records(db, [scan_id])
     await db.commit()
+
+
+async def _delete_scan_records(
+    db: AsyncSession, scan_ids: list[int], *, rebuild_inventory: bool = True
+) -> None:
+    if not scan_ids:
+        return
+    await db.execute(delete(ScanPipelineRun).where(ScanPipelineRun.scan_id.in_(scan_ids)))
+    await db.execute(delete(ScanObservation).where(ScanObservation.scan_id.in_(scan_ids)))
+    await db.execute(delete(DeepScanRun).where(DeepScanRun.scan_id.in_(scan_ids)))
+    await db.execute(delete(Finding).where(Finding.scan_id.in_(scan_ids)))
+    await db.execute(delete(ScanJob).where(ScanJob.id.in_(scan_ids)))
+    if rebuild_inventory:
+        await _rebuild_inventory_from_history(db)
+
+
+async def _rebuild_inventory_from_history(db: AsyncSession) -> None:
+    """Keep inventory supported by retained observations and remove deleted-only data."""
+    observations = (
+        await db.execute(
+            select(ScanObservation).order_by(
+                desc(ScanObservation.observed_at), desc(ScanObservation.id)
+            )
+        )
+    ).scalars().all()
+    latest_host: dict[str, ScanObservation] = {}
+    latest_alive_at: dict[str, datetime] = {}
+    latest_port_check: dict[tuple[str, int], tuple[ScanObservation, dict]] = {}
+    for observation in observations:
+        latest_host.setdefault(observation.ip, observation)
+        if observation.host_alive:
+            latest_alive_at.setdefault(observation.ip, observation.observed_at)
+        for check in observation.port_checks or []:
+            key = (observation.ip, int(check["port"]))
+            latest_port_check.setdefault(key, (observation, check))
+
+    assets = (await db.execute(select(Asset))).scalars().all()
+    assets_by_ip = {asset.ip: asset for asset in assets}
+    assets_by_id = {asset.id: asset for asset in assets}
+    services = (await db.execute(select(Service))).scalars().all()
+    services_by_key = {}
+    for service in services:
+        asset = assets_by_id.get(service.asset_id)
+        if asset is not None and latest_alive_at.get(asset.ip) is not None:
+            services_by_key[(asset.ip, service.port)] = service
+
+    for asset in assets:
+        latest = latest_host.get(asset.ip)
+        last_alive_at = latest_alive_at.get(asset.ip)
+        if latest is None or last_alive_at is None:
+            await db.execute(delete(Service).where(Service.asset_id == asset.id))
+            await db.delete(asset)
+            continue
+
+        asset.is_alive = latest.host_alive
+        asset.last_seen = last_alive_at
+        if latest.host_alive:
+            open_ports = [
+                {
+                    "port": int(check["port"]),
+                    "service": check.get("service"),
+                    "banner": check.get("banner"),
+                }
+                for check in latest.port_checks or []
+                if check.get("state") == "open"
+            ]
+            asset.risk_score = compute_asset_risk(
+                run_analysis_rules(asset.ip, open_ports), open_ports
+            )
+
+    for key, service in services_by_key.items():
+        observation_check = latest_port_check.get(key)
+        if observation_check is None or observation_check[1].get("state") != "open":
+            await db.delete(service)
+            continue
+        observation, check = observation_check
+        service.state = "open"
+        service.last_seen = observation.observed_at
+        service.service_name = check.get("service") or service.service_name
+        service.banner = check.get("banner") or service.banner
+
+    for (ip, port), (observation, check) in latest_port_check.items():
+        if check.get("state") != "open" or (ip, port) in services_by_key:
+            continue
+        asset = assets_by_ip.get(ip)
+        if asset is not None and latest_alive_at.get(ip) is not None:
+            db.add(
+                Service(
+                    asset_id=asset.id,
+                    port=port,
+                    service_name=check.get("service"),
+                    banner=check.get("banner"),
+                    state="open",
+                    first_seen=observation.observed_at,
+                    last_seen=observation.observed_at,
+                )
+            )
 
 
 @router.websocket("/{scan_id}/ws")

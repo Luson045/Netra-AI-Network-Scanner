@@ -3,32 +3,11 @@
 from __future__ import annotations
 
 import json
-from urllib.parse import urlsplit
-
-import httpx
-
-from app.core.config import settings
-from app.core.errors import ExplanationServiceError
-from app.core.logging import get_logger
-
-logger = get_logger("app.explanations")
-_LOCAL_HOSTS = {"localhost", "127.0.0.1", "::1"}
+from app.services.local_ollama import generate_local_text
 
 
 async def generate_local_ai_explanation(finding: dict) -> tuple[str, str]:
     """Generate an explanation through a local Ollama instance."""
-    base_url = settings.ollama_base_url.rstrip("/")
-    parsed_url = urlsplit(base_url)
-    if (
-        parsed_url.scheme != "http"
-        or parsed_url.hostname not in _LOCAL_HOSTS
-        or parsed_url.username
-        or parsed_url.password
-    ):
-        raise ExplanationServiceError(
-            "Ollama must use an HTTP endpoint bound to this device (localhost)."
-        )
-
     evidence = {
         "title": finding["title"],
         "severity": finding["severity"],
@@ -47,31 +26,4 @@ async def generate_local_ai_explanation(finding: dict) -> tuple[str, str]:
         "If evidence is limited, say so.\n\n"
         f"Finding data:\n{json.dumps(evidence, ensure_ascii=True)}"
     )
-    try:
-        async with httpx.AsyncClient(timeout=settings.ollama_timeout_secs) as client:
-            response = await client.post(
-                f"{base_url}/api/generate",
-                json={
-                    "model": settings.ollama_model,
-                    "prompt": prompt,
-                    "stream": False,
-                    "options": {"temperature": 0.2, "num_predict": 256},
-                },
-            )
-            response.raise_for_status()
-    except httpx.HTTPError as exc:
-        logger.warning("Local Ollama request failed: %s", exc)
-        raise ExplanationServiceError(
-            "Could not reach local Ollama. Start Ollama and confirm the configured model is available."
-        ) from exc
-
-    try:
-        body = response.json()
-    except ValueError as exc:
-        raise ExplanationServiceError("Local Ollama returned an invalid response.") from exc
-    explanation = body.get("response") if isinstance(body, dict) else None
-    if not isinstance(explanation, str) or not explanation.strip():
-        raise ExplanationServiceError(
-            "Local Ollama returned no explanation. Confirm the configured model is available."
-        )
-    return explanation.strip(), settings.ollama_model
+    return await generate_local_text(prompt, max_tokens=256)

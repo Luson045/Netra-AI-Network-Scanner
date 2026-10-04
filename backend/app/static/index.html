@@ -5,25 +5,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#0b1118">
     <meta name="description" content="Local-first network visibility for networks you own or are authorized to assess.">
-    <title>NetGuard — Local Network Visibility</title>
+    <title>Netra AI — Local Network Visibility</title>
     <link rel="stylesheet" href="/static/styles.css">
   </head>
   <body>
     <div class="app-shell">
       <aside class="sidebar">
-        <a class="brand" href="/" aria-label="NetGuard home">
+        <a class="brand" href="/" aria-label="Netra AI home">
           <span class="brand-mark" aria-hidden="true">
             <svg viewBox="0 0 32 32"><path d="M16 3.5 26 7v7.8c0 6.1-4.1 11.3-10 13.7-5.9-2.4-10-7.6-10-13.7V7l10-3.5Z"/><path d="m11.5 15.8 3 3 6.2-6.2"/></svg>
           </span>
-          <span class="brand-copy"><strong>netguard</strong><small>LOCAL NETWORK VISIBILITY</small></span>
+          <span class="brand-copy"><strong>Netra <em>AI</em></strong><small>LOCAL NETWORK VISIBILITY</small></span>
         </a>
 
         <div class="sidebar-label">WORKSPACE</div>
         <nav class="primary-nav" aria-label="Main navigation">
-          <button class="nav-item active" data-view="overview"><span class="nav-icon">◫</span> Overview</button>
-          <button class="nav-item" data-view="assets"><span class="nav-icon">⌘</span> Assets <span class="nav-count" id="asset-nav-count">0</span></button>
-          <button class="nav-item" data-view="findings"><span class="nav-icon">◎</span> Findings <span class="nav-count" id="finding-nav-count">0</span></button>
-          <button class="nav-item" data-view="history"><span class="nav-icon">◷</span> Scan history</button>
+          <button class="nav-item active" data-view="overview" aria-label="Overview" title="Overview"><span class="nav-icon">◫</span> Overview</button>
+          <button class="nav-item" data-view="assets" aria-label="Assets" title="Assets"><span class="nav-icon">⌘</span> Assets <span class="nav-count" id="asset-nav-count">0</span></button>
+          <button class="nav-item" data-view="findings" aria-label="Findings" title="Findings"><span class="nav-icon">◎</span> Findings <span class="nav-count" id="finding-nav-count">0</span></button>
+          <button class="nav-item" data-view="history" aria-label="Scan history" title="Scan history"><span class="nav-icon">◷</span> Scan history</button>
         </nav>
 
         <div class="sidebar-spacer"></div>
@@ -33,7 +33,7 @@
           <p>Your scans and history stay on this device. No cloud connection required.</p>
           <span class="privacy-status"><span class="live-dot"></span> LOCAL MODE</span>
         </div>
-        <div class="sidebar-footer"><span class="version-mark"></span> NetGuard MVP <span class="version-number">v0.1</span></div>
+        <div class="sidebar-footer"><span class="version-mark"></span> Netra AI <span class="version-number">LOCAL</span></div>
       </aside>
 
       <main class="main-area">
@@ -41,7 +41,7 @@
           <div class="breadcrumb"><span>Workspace</span><span class="crumb-separator">/</span><strong id="current-section">Overview</strong></div>
           <div class="topbar-right">
             <span class="connection-pill"><span class="live-dot" id="api-dot"></span><span id="api-status">Checking local service</span></span>
-            <button class="icon-button" id="refresh-button" title="Refresh data" aria-label="Refresh data">↻</button>
+            <button class="icon-button refresh-control" id="refresh-button" title="Refresh dashboard data" aria-label="Refresh dashboard data"><span aria-hidden="true">↻</span><span class="refresh-label">Refresh</span></button>
             <div class="avatar">L</div>
           </div>
         </header>
@@ -84,50 +84,57 @@
             <div class="dashboard-grid">
               <section class="panel scan-panel" id="new-scan-panel">
                 <div class="panel-heading">
-                  <div><div class="eyebrow"><span class="eyebrow-line"></span> DISCOVERY</div><h2>Start a network scan</h2></div>
+                  <div><div class="eyebrow"><span class="eyebrow-line"></span> SCAN WORKSPACE</div><h2>Choose a scan type</h2></div>
                   <span class="panel-icon">⌁</span>
                 </div>
-                <p class="panel-description">Check a network you own or have permission to assess. Only safe TCP connection checks are performed.</p>
+                <p class="panel-description">Choose only devices and networks you own or are authorized to assess.</p>
                 <form id="scan-form">
                   <label class="field-label" for="scan-name">SCAN NAME <span class="optional">OPTIONAL</span></label>
                   <input class="text-input" id="scan-name" name="name" maxlength="200" placeholder="e.g. Home office check">
-
-                  <span class="field-label">TARGET PRESETS</span>
+                  <span class="field-label">WHAT SHOULD WE CHECK?</span>
                   <div class="preset-list" aria-label="Target presets">
                     <label class="preset-option"><input type="checkbox" name="target-preset" value="127.0.0.1" checked><span><strong>This computer</strong><small>127.0.0.1 · loopback</small></span></label>
-                    <label class="preset-option"><input type="checkbox" name="target-preset" value="192.168.1.0/24"><span><strong>Private LAN example</strong><small>192.168.1.0/24 · change to your authorized subnet</small></span></label>
-                    <label class="preset-option"><input type="checkbox" name="target-preset" value="10.0.0.0/24"><span><strong>Private network example</strong><small>10.0.0.0/24 · change to your authorized subnet</small></span></label>
+                    <label class="preset-option"><input type="checkbox" name="target-preset" value="192.168.1.0/24"><span><strong>Private LAN example</strong><small>Change to your own authorized subnet</small></span></label>
+                    <label class="preset-option"><input type="checkbox" name="target-preset" value="10.0.0.0/24"><span><strong>Private network example</strong><small>Change to your own authorized subnet</small></span></label>
                   </div>
-                  <label class="field-label" for="scan-targets">OR ADD TARGETS <span class="optional">OPTIONAL</span></label>
+                  <label class="field-label" for="scan-targets">OR ENTER ADDRESSES</label>
                   <input class="text-input mono-input" id="scan-targets" name="targets" placeholder="IP addresses, CIDRs, or hostnames">
-                  <div class="field-hint">Selections and typed targets are combined. Scan only systems you own or are authorized to assess.</div>
-
-                  <span class="field-label">COMMON TCP PORTS</span>
-                  <div class="preset-list port-presets" aria-label="Common TCP port presets">
-                    <label class="preset-option"><input type="checkbox" name="port-preset" value="22" checked><span><strong>22</strong><small>SSH</small></span></label>
-                    <label class="preset-option"><input type="checkbox" name="port-preset" value="80" checked><span><strong>80</strong><small>HTTP</small></span></label>
-                    <label class="preset-option"><input type="checkbox" name="port-preset" value="443" checked><span><strong>443</strong><small>HTTPS</small></span></label>
-                    <label class="preset-option"><input type="checkbox" name="port-preset" value="8000" checked><span><strong>8000</strong><small>Web app</small></span></label>
-                    <label class="preset-option"><input type="checkbox" name="port-preset" value="21"><span><strong>21</strong><small>FTP</small></span></label>
-                    <label class="preset-option"><input type="checkbox" name="port-preset" value="23"><span><strong>23</strong><small>Telnet</small></span></label>
-                    <label class="preset-option"><input type="checkbox" name="port-preset" value="445"><span><strong>445</strong><small>SMB</small></span></label>
+                  <div class="field-hint">Choose presets, enter addresses, or combine both. Public targets are blocked unless explicitly allow-listed.</div>
+                  <label class="field-label" for="scan-ports">PORT OPTIONS <span class="optional">QUICK SCAN ONLY</span></label>
+                  <div class="preset-list port-presets" aria-label="Common port selections">
+                    <label class="preset-option"><input type="checkbox" name="port-preset" value="22"><span><strong>22</strong><small>SSH</small></span></label>
+                    <label class="preset-option"><input type="checkbox" name="port-preset" value="80"><span><strong>80</strong><small>HTTP</small></span></label>
+                    <label class="preset-option"><input type="checkbox" name="port-preset" value="443"><span><strong>443</strong><small>HTTPS</small></span></label>
                     <label class="preset-option"><input type="checkbox" name="port-preset" value="3306"><span><strong>3306</strong><small>MySQL</small></span></label>
                     <label class="preset-option"><input type="checkbox" name="port-preset" value="3389"><span><strong>3389</strong><small>RDP</small></span></label>
-                    <label class="preset-option"><input type="checkbox" name="port-preset" value="5432"><span><strong>5432</strong><small>PostgreSQL</small></span></label>
+                    <label class="preset-option"><input type="checkbox" name="port-preset" value="5432"><span><strong>5432</strong><small>Postgres</small></span></label>
                     <label class="preset-option"><input type="checkbox" name="port-preset" value="6379"><span><strong>6379</strong><small>Redis</small></span></label>
+                    <label class="preset-option"><input type="checkbox" name="port-preset" value="8080"><span><strong>8080</strong><small>HTTP alt</small></span></label>
+                    <label class="preset-option"><input type="checkbox" name="port-preset" value="8443"><span><strong>8443</strong><small>HTTPS alt</small></span></label>
+                    <label class="preset-option"><input type="checkbox" name="port-preset" value="9092"><span><strong>9092</strong><small>Kafka</small></span></label>
                     <label class="preset-option"><input type="checkbox" name="port-preset" value="9200"><span><strong>9200</strong><small>Elasticsearch</small></span></label>
+                    <label class="preset-option"><input type="checkbox" name="port-preset" value="27017"><span><strong>27017</strong><small>MongoDB</small></span></label>
                   </div>
-                  <label class="field-label" for="scan-ports">OR ADD PORTS <span class="optional">OPTIONAL</span></label>
-                  <input class="text-input mono-input" id="scan-ports" name="ports" placeholder="e.g. 8080 or 8000-8010">
-                  <div class="field-hint">Selected and typed ports are combined. Uncheck all and leave blank to use the built-in common-port set.</div>
-
+                  <label class="field-label" for="scan-ports">OR ENTER PORTS</label>
+                  <input class="text-input mono-input" id="scan-ports" name="ports" placeholder="22,80,443,8000-8010">
+                  <div class="field-hint">Select any common ports above or type a custom comma-separated list of ports or ranges. Leave blank to use common service ports. Deep Scan always lets the agent choose.</div>
                   <label class="confirm-row" for="scan-authorized">
-                    <input type="checkbox" id="scan-authorized" required>
-                    <span>I own these targets or have authorization to scan them.</span>
+                    <input type="checkbox" id="scan-authorized">
+                    <span>I own these targets or have permission to scan them.</span>
                   </label>
-                  <button class="button button-primary scan-submit" id="scan-submit" type="submit"><span>Start safe scan</span><span aria-hidden="true">→</span></button>
+                  <div class="scan-actions">
+                    <button class="button button-primary scan-submit" id="quick-scan" type="button"><span>Quick scan</span><span aria-hidden="true">→</span></button>
+                    <p>Fast, deterministic checks using the built-in common service ports.</p>
+                    <button class="button button-deep scan-submit" id="deep-scan" type="button"><span>Deep Scan</span><span aria-hidden="true">✦</span></button>
+                    <p>Local AI agents choose a focused port plan, then analyze the measured results.</p>
+                  </div>
+                  <section class="scope-plan-card" id="scope-plan" aria-live="polite" hidden>
+                    <div class="scope-plan-heading"><span class="workflow-step-icon">✦</span><div><strong>Agent plan ready</strong><small>Review the targets and ports before authorizing the scan.</small></div></div>
+                    <div id="scope-plan-content"></div>
+                    <button class="button button-deep scan-submit" id="approve-scan" type="button"><span>Approve plan &amp; start Deep Scan</span><span aria-hidden="true">→</span></button>
+                  </section>
                 </form>
-                <div class="safe-note"><span class="safe-shield">✓</span><span><strong>Safe by default</strong> &nbsp;No logins, exploits, or device changes.</span></div>
+                <div class="safe-note"><span class="safe-shield">✓</span><span><strong>Safe by design</strong> &nbsp;TCP connection checks only. No logins, exploits, or device changes.</span></div>
               </section>
 
               <div class="right-stack">
@@ -141,6 +148,7 @@
                     <strong>Ready when you are</strong>
                     <p>Start a scan to discover devices and open services.</p>
                   </div>
+                  <div class="analysis-workflow" id="analysis-workflow" aria-label="Netra AI analysis workflow"></div>
                 </section>
 
                 <section class="panel findings-panel">
@@ -161,7 +169,7 @@
               <div class="table-wrap"><table><thead><tr><th>DEVICE</th><th>ADDRESS</th><th>OPEN SERVICES</th><th>RISK</th><th>LAST SEEN</th></tr></thead><tbody id="asset-preview-body"></tbody></table></div>
               <div class="table-empty" id="asset-preview-empty" hidden><span class="empty-table-icon">⌘</span><strong>No assets discovered yet</strong><span>Run your first scan to build a local inventory.</span></div>
             </section>
-            <div class="workflow-note"><span class="workflow-icon">⌁</span><span><strong>How it works</strong><br>Review scope <b>→</b> safe TCP checks <b>→</b> local history <b>→</b> deterministic findings</span><span class="workflow-tag">OPTIONAL LOCAL AI</span></div>
+            <div class="workflow-note"><span class="workflow-icon">⌁</span><span><strong>Know what each scan does</strong><br><b>Quick Scan</b> uses fixed common ports and evidence-based rules. <b>Deep Scan</b> uses AI agents to plan ports and analyze the measured results. Both use the same approved targets and safe TCP checks.</span></div>
           </section>
 
           <section class="view-panel" id="view-assets">
@@ -170,16 +178,21 @@
           </section>
 
           <section class="view-panel" id="view-findings">
-            <div class="page-heading simple-heading"><div><div class="eyebrow"><span class="eyebrow-line"></span> EVIDENCE-BASED REVIEW</div><h1>Security findings</h1><p class="page-subtitle">Choose deterministic rule-based explanations or request an AI explanation from your local Ollama model.</p></div></div>
-            <section class="panel full-table-panel"><div class="panel-heading"><div><h2>Open findings</h2><p class="panel-description">AI explanations are generated on demand on this device. They can be imperfect; verify against the recorded evidence.</p></div><span class="result-count" id="finding-result-count">0 findings</span></div><div class="table-wrap"><table class="findings-table"><thead><tr><th>SEVERITY</th><th>FINDING &amp; EXPLANATION</th><th>DEVICE</th><th>OBSERVED EVIDENCE</th><th>STATUS</th></tr></thead><tbody id="finding-table-body"></tbody></table></div><div class="table-empty" id="finding-empty" hidden><span class="empty-table-icon">✓</span><strong>No open findings</strong><span>Run a scan to review locally detected issues.</span></div></section>
+            <div class="page-heading simple-heading"><div><div class="eyebrow"><span class="eyebrow-line"></span> EVIDENCE-BASED REVIEW</div><h1>Security findings</h1><p class="page-subtitle">Review measured evidence, understand why it matters, and ask AI for a plain-language explanation when useful.</p></div></div>
+            <section class="panel full-table-panel"><div class="panel-heading"><div><h2>Open findings</h2><p class="panel-description">Every item links to observed evidence and a practical next step. You can request a plain-language explanation for any finding.</p></div><span class="result-count" id="finding-result-count">0 findings</span></div><div class="table-wrap"><table class="findings-table"><thead><tr><th>SEVERITY</th><th>FINDING &amp; EXPLANATION</th><th>DEVICE</th><th>OBSERVED EVIDENCE</th><th>STATUS</th></tr></thead><tbody id="finding-table-body"></tbody></table></div><div class="table-empty" id="finding-empty" hidden><span class="empty-table-icon">✓</span><strong>No open findings</strong><span>Run a scan to review locally detected issues.</span></div></section>
           </section>
 
           <section class="view-panel" id="view-history">
             <div class="page-heading simple-heading"><div><div class="eyebrow"><span class="eyebrow-line"></span> LOCAL RECORD</div><h1>Scan history</h1><p class="page-subtitle">Previous scans are stored in the local SQLite database.</p></div></div>
-            <section class="panel full-table-panel"><div class="panel-heading"><div><h2>Recent scans</h2><p class="panel-description">Scan results remain on this device and can be cleared from the local database.</p></div><span class="result-count" id="history-result-count">0 scans</span></div><div class="table-wrap"><table><thead><tr><th>SCAN</th><th>SCOPE</th><th>STATUS</th><th>DEVICES</th><th>SERVICES</th><th>FINDINGS</th><th>STARTED</th></tr></thead><tbody id="history-table-body"></tbody></table></div><div class="table-empty" id="history-empty" hidden><span class="empty-table-icon">◷</span><strong>No scans saved yet</strong><span>Completed scan history will appear here.</span></div></section>
+            <section class="panel full-table-panel">
+              <div class="panel-heading"><div><h2>Recent scans</h2><p class="panel-description">Open a completed scan for its analysis, or remove saved scan records. Active scans are kept safe.</p></div><div class="history-actions"><span class="result-count" id="history-result-count">0 scans</span><button class="button button-danger" id="delete-all-scans" type="button">Delete all history</button></div></div>
+              <div class="table-wrap"><table><thead><tr><th>SCAN</th><th>TYPE</th><th>SCOPE</th><th>STATUS</th><th>DEVICES</th><th>SERVICES</th><th>FINDINGS</th><th>STARTED</th><th>DETAILS</th><th></th></tr></thead><tbody id="history-table-body"></tbody></table></div>
+              <div class="table-empty" id="history-empty" hidden><span class="empty-table-icon">◷</span><strong>No scans saved yet</strong><span>Completed scan history will appear here.</span></div>
+            </section>
+            <section class="panel history-analysis" id="history-analysis" aria-live="polite" hidden></section>
           </section>
 
-          <footer class="main-footer"><span>NetGuard MVP <span class="footer-separator">·</span> Local-only network visibility</span><span><span class="live-dot"></span> Data stored on this device</span></footer>
+          <footer class="main-footer"><span>Netra AI <span class="footer-separator">·</span> Local network visibility</span><span><span class="live-dot"></span> Data stored on this device</span></footer>
         </div>
       </main>
     </div>

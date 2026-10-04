@@ -38,7 +38,7 @@ class _FakeAsyncClient:
 async def test_generate_local_ai_explanation_uses_configured_ollama(monkeypatch):
     monkeypatch.setattr(settings, "ollama_base_url", "http://127.0.0.1:11434/")
     monkeypatch.setattr(settings, "ollama_model", "unit-test-model")
-    monkeypatch.setattr("app.services.explanations.httpx.AsyncClient", _FakeAsyncClient)
+    monkeypatch.setattr("app.services.local_ollama.httpx.AsyncClient", _FakeAsyncClient)
 
     explanation, model = await generate_local_ai_explanation(
         {

@@ -11,7 +11,11 @@ from app.services.scanner.checks import check_host, check_port
 @pytest.fixture()
 async def local_server():
     """Start a tiny TCP server on an ephemeral localhost port."""
-    server = await asyncio.start_server(lambda r, w: None, "127.0.0.1", 0)
+    async def close_connection(reader, writer):
+        writer.close()
+        await writer.wait_closed()
+
+    server = await asyncio.start_server(close_connection, "127.0.0.1", 0)
     port = server.sockets[0].getsockname()[1]
     yield port
     server.close()
