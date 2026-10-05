@@ -21,6 +21,19 @@ Open <http://127.0.0.1:8000>. `run_local.py` starts the dashboard, API, and scan
 together. Press **Ctrl+C** to stop them. Restart this process after updating the backend; an old
 running process will not have the Deep Scan endpoints.
 
+## Build the Windows desktop download
+
+On Windows, run `build_windows.bat` from the project root. It creates
+`NetraAI-Windows.zip` in the root directory. Publish that ZIP alongside the root website files
+so its **Download for Windows** links work. The download contains `Setup.bat` and the packaged
+application; users should extract the ZIP, run `Setup.bat`, then start Netra AI from the desktop
+shortcut. The setup installs to the current user's Local AppData and does not require admin
+rights or a separate Python installation.
+
+The desktop build opens the dashboard at <http://127.0.0.1:8000>. Scan history is stored in
+`%LOCALAPPDATA%\Netra AI\data`. Deep Scan AI features still require Ollama installed and running
+locally, as described below.
+
 ## Scan workflow
 
 1. Choose authorized target presets or enter the addresses to assess. Private subnet presets
