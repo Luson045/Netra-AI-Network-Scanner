@@ -28,7 +28,7 @@ from app.schemas.deep_scan import (
     DeepScanResult,
 )
 from app.services.deep_agents import (
-    PORT_CANDIDATES,
+    agent_candidate_ports,
     analyze_deep_scan,
     create_agent_port_plan,
 )
@@ -87,7 +87,7 @@ async def plan_deep_scan(payload: DeepScanCreate):
 async def create_deep_scan(payload: DeepScanApproval, db: AsyncSession = Depends(get_db)):
     """Queue a user-approved local-agent port plan after revalidating its scope."""
     if len(set(payload.ports)) != len(payload.ports) or not set(payload.ports).issubset(
-        PORT_CANDIDATES
+        agent_candidate_ports()
     ):
         raise ValidationError("Deep Scan ports must come from the agent's approved port list")
     validated = build_scan_plan(

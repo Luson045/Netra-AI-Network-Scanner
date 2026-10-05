@@ -190,6 +190,33 @@ def test_deep_scan_plans_ports_with_agent_then_requires_approval(client, monkeyp
     assert rejected.status_code == 422
 
 
+def test_deep_scan_approval_accepts_a_port_from_local_listener_context(client, monkeypatch):
+    from app.services import deep_agents
+
+    monkeypatch.setattr(
+        deep_agents,
+        "local_device_profile",
+        lambda: {
+            "platform": "Windows 11",
+            "listeners_available": True,
+            "listening_services": [{"port": 5040, "processes": ["Code.exe"]}],
+        },
+    )
+    monkeypatch.setattr(deep_agents.platform, "system", lambda: "Windows")
+
+    approved = client.post(
+        "/scans/deep",
+        json={
+            "targets": "127.0.0.1",
+            "ports": [5040],
+            "rationale": "Check a service listening on the scanner device.",
+        },
+    )
+
+    assert approved.status_code == 201, approved.text
+    assert approved.json()["plan"]["ports"] == [5040]
+
+
 def test_deep_scan_without_findings_skips_local_analysis(client, monkeypatch):
     from app.core.db import get_session_factory
     from app.models import DeepScanRun, ScanJob, ScanPipelineRun

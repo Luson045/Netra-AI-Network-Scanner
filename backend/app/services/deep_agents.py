@@ -33,6 +33,26 @@ class _PortPlan(BaseModel):
     rationale: str = Field(..., min_length=1, max_length=800)
 
 
+def agent_candidate_ports(device_profile: dict | None = None) -> tuple[int, ...]:
+    """Return the bounded port candidates available to both planning and approval."""
+    if device_profile is None:
+        device_profile = local_device_profile()
+    os_port_candidates = {
+        "Windows": (135, 139, 445, 3389, 5985, 5986),
+        "Linux": (22, 111, 2049),
+        "Darwin": (22, 548, 5900),
+    }.get(platform.system(), ())
+    local_listener_ports = {
+        listener["port"] for listener in device_profile["listening_services"]
+    }
+    return tuple(sorted(
+        set(PORT_CANDIDATES)
+        | set(HIGH_RISK_SERVICE_PORTS)
+        | set(os_port_candidates)
+        | local_listener_ports
+    ))
+
+
 def local_device_profile() -> dict:
     """Collect bounded local OS and TCP-listener context for the user-reviewed plan."""
     listening_by_port: dict[int, set[str]] = {}
@@ -75,21 +95,7 @@ def local_device_profile() -> dict:
 async def create_agent_port_plan(targets: str, name: str | None) -> tuple[dict, str]:
     validated = build_scan_plan(ScanCreate(targets=targets, ports="80", name=name))
     device_profile = local_device_profile()
-    os_name = platform.system()
-    os_port_candidates = {
-        "Windows": (135, 139, 445, 3389, 5985, 5986),
-        "Linux": (22, 111, 2049),
-        "Darwin": (22, 548, 5900),
-    }.get(os_name, ())
-    local_listener_ports = {
-        listener["port"] for listener in device_profile["listening_services"]
-    }
-    candidate_ports = tuple(sorted(
-        set(PORT_CANDIDATES)
-        | set(HIGH_RISK_SERVICE_PORTS)
-        | set(os_port_candidates)
-        | local_listener_ports
-    ))
+    candidate_ports = agent_candidate_ports(device_profile)
     prompt = (
         "You are Netra's defensive TCP scope-planning agent. The user supplied the exact "
         "authorized targets below. Do not expand, replace, resolve to new, or otherwise "
